@@ -4,7 +4,7 @@ from collections import deque
 TOKEN = os.environ["TG_TOKEN"]
 CHAT = os.environ["TG_CHAT_ID"]
 SYMBOL = "BTCUSDT"
-DROP = 0.30
+DROP = 0.05
 WINDOW = 15 * 60
 RUN_FOR = 5 * 3600 + 50 * 60
 COOLDOWN = 300

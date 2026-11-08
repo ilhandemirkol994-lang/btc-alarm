@@ -4,10 +4,13 @@ from collections import deque
 TOKEN = os.environ["TG_TOKEN"]
 CHAT = os.environ["TG_CHAT_ID"]
 SYMBOL = "BTCUSDT"
-DROP = 0.25
-WINDOW = 15 * 60
+
+# pencere (dakika): eşik (yüzde)
+WINDOWS = {15: 0.30, 30: 0.30}
+
 RUN_FOR = 5 * 3600 + 50 * 60
 COOLDOWN = 300
+MAX_WINDOW = max(WINDOWS) * 60
 
 URLS = [
     "https://fapi.binance.com/fapi/v1/ticker/price",
@@ -25,26 +28,38 @@ def price():
     return None
 
 def send(text):
-    requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-                  data={"chat_id": CHAT, "text": text}, timeout=10)
+    try:
+        requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+                      data={"chat_id": CHAT, "text": text}, timeout=10)
+    except Exception:
+        pass
 
 start = time.time()
 hist = deque()
-last_alert = 0
-send("BTC alarm botu başladı ✅")
+last_alert = {w: 0 for w in WINDOWS}
+send("BTC alarm botu başladı ✅ (15 dk + 30 dk)")
 
 while time.time() - start < RUN_FOR:
     p = price()
     now = time.time()
     if p:
         hist.append((now, p))
-        while hist and now - hist[0][0] > WINDOW:
+        while hist and now - hist[0][0] > MAX_WINDOW:
             hist.popleft()
-        high = max(x[1] for x in hist)
-        change = (p - high) / high * 100
-        if change <= -DROP and now - last_alert > COOLDOWN:
-            send(f"🔻 {SYMBOL} son 15 dk'da %{abs(change):.2f} düştü\n"
-                 f"Zirve: {high:.1f} → Şimdi: {p:.1f}")
-            last_alert = now
-            hist.clear()
+
+        hits = []
+        for w, drop in WINDOWS.items():
+            since = max(now - w * 60, last_alert[w])
+            high = max(x[1] for x in hist if x[0] >= since)
+            change = (p - high) / high * 100
+            if change <= -drop and now - last_alert[w] > COOLDOWN:
+                hits.append((w, abs(change), high))
+
+        if hits:
+            lines = [f"🔻 {SYMBOL} düşüş alarmı"]
+            for w, ch, high in hits:
+                lines.append(f"Son {w} dk: %{ch:.2f} düştü (zirve {high:.1f})")
+                last_alert[w] = now
+            lines.append(f"Şimdi: {p:.1f}")
+            send("\n".join(lines))
     time.sleep(2)

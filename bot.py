@@ -6,7 +6,7 @@ CHAT = os.environ["TG_CHAT_ID"]
 SYMBOL = "BTCUSDT"
 
 # pencere (dakika): eşik (yüzde)
-WINDOWS = {15: 0.27, 30: 0.38}
+WINDOWS = {15: 0.29, 30: 0.41}
 
 RUN_FOR = 5 * 3600 + 50 * 60
 COOLDOWN = 300

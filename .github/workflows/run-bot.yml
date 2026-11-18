@@ -1,0 +1,28 @@
+name: Signal Bot
+
+on:
+  schedule:
+    # UTC 时间，每 15 分钟一次
+    # 注意：GitHub 定时任务可能延迟，不是精确 15 分钟
+    - cron: '*/15 * * * *'
+  workflow_dispatch: {}  # 允许手动点击运行，方便调试
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: pip install ccxt pandas numpy requests
+      
+      - name: Run bot
+        env:
+          TG_TOKEN: ${{ secrets.TG_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+        run: python backtest_bot.py
